@@ -604,7 +604,6 @@ class WalletLanding(Screen):
 
     @work(group="full_wallet_scan")
     async def full_wallet_scan(self) -> None:
-        print("FULL WALLET SCAN")
         await self.datastore.reset_timer(run_on_start=False)
         self.datastore.reset_current_wallet_datastore()
         self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
@@ -613,7 +612,9 @@ class WalletLanding(Screen):
         network = self.datastore.get_current_network()
 
         await self.scan_network(wallet, network, scan_type=ScanType.FULL_WALLET)
-        await self.update_dom()
+
+        if self.is_current:
+            await self.update_dom()
 
     def set_scanning_for_network(self, wallet_name: str, network_name: str) -> None:
         self.datastore.set_scanning_for_network(wallet_name, network_name)

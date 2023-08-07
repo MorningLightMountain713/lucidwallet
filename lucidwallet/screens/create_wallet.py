@@ -123,7 +123,6 @@ class CreateWallet(Screen):
 
             lang_picker = self.query_one("LanguagePicker", LanguagePicker)
             mnemonic = Mnemonic(lang_picker.language).generate()
-            print(mnemonic)
 
             self.app.push_screen(MnemonicOverlay(self.nickname, mnemonic))
 

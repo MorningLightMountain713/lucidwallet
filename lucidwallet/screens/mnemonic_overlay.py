@@ -71,7 +71,6 @@ class MnemonicOverlay(ModalScreen[bool]):
 
     @work()
     async def create_wallet(self):
-        print("CREATE EALLET")
         # have already validated, but validate again
         seed = Mnemonic().to_seed(self.mnemonic).hex()
         hdkey = HDKey.from_seed(seed, network="flux")
@@ -81,8 +80,6 @@ class MnemonicOverlay(ModalScreen[bool]):
             hdkey,
             network="flux",
         )
-
-        print("NEW WALLET", wallet)
 
         if wallet:
             await wallet.new_key(network="bitcoin")

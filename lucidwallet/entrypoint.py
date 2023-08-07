@@ -98,8 +98,6 @@ class FluxWallet(App[None]):
     async def on_mnemonic_overlay_wallet_created(
         self, event: MnemonicOverlay.WalletCreated
     ):
-        ...
-        print("NEW WALLET CREATED IN APP")
         wallet_landing: WalletLanding = self.get_screen("wallet_landing")
         await wallet_landing.new_wallet_created(event.wallet)
 
