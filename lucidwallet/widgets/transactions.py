@@ -153,8 +153,8 @@ class TransactionHistory(Widget):
             self.call_after_refresh(self.loading_widget.remove)
 
     def scroll(self, y: float) -> None:
-        table = self.query_one("ScrollDataTable", self.ScrollDataTable)
-        self.call_after_refresh(table.scroll_to, y=y, animate=False)
+        scroll_center = self.query_one("ScrollCenter", self.ScrollCenter)
+        self.call_after_refresh(scroll_center.scroll_to, y=y, animate=False)
 
     def update_date_time(self, txid: str, date: str, time: str) -> None:
         table = self.query_one("ScrollDataTable", self.ScrollDataTable)
