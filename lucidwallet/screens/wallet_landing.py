@@ -197,7 +197,7 @@ class WalletLanding(Screen):
 
         # just pass in wallet name to WalletLanding, don't open wallet
         await self.datastore.set_current_wallet(self.initial_wallet.name)
-        await self.datastore.start_scan_timer()
+        self.datastore.start_scan_timer()
         await self.set_dom_spend_details()
         # self.get_tx_from_db_worker()
 

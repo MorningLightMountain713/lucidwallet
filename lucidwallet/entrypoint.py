@@ -1,8 +1,9 @@
 import hashlib
 from functools import partial
 
+
 import keyring
-from textual import on
+from textual import on, work
 from textual.app import App
 from textual.binding import Binding
 
@@ -16,6 +17,13 @@ from lucidwallet.screens import (
     WalletLanding,
 )
 
+import asyncio
+
+import httpx
+import importlib_metadata
+
+package = "lucidwallet"
+
 
 class FluxWallet(App[None]):
     CSS_PATH = "app.css"
@@ -28,6 +36,23 @@ class FluxWallet(App[None]):
         ("ctrl+t", "app.toggle_dark", "Toggle Dark mode"),
         Binding("ctrl+c,ctrl+q", "app.quit", "Quit", show=True),
     ]
+
+    async def new_version_available(self) -> str | None:
+        current_version = importlib_metadata.version(package)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"https://pypi.org/pypi/{package}/json")
+
+        latest_version = response.json()["info"]["version"]
+
+        if current_version != latest_version:
+            return latest_version
+
+    @work(name="version_check")
+    async def version_check(self) -> None:
+        if new_version := await self.new_version_available():
+            self.call_after_refresh(
+                self.notify, f"New version {new_version} available", timeout=5
+            )
 
     async def valid_password(self, app_data: InitAppResponse) -> bool:
         return await app_data.last_used_wallet.db.validate_key()
@@ -57,12 +82,14 @@ class FluxWallet(App[None]):
         self.push_screen("wallet_landing")
 
     async def on_mount(self) -> None:
-        # this is all manner of fucked
+        self.version_check()
+
+        # push loading screen first, with logo
+
         app_data = await init_app()
 
         if not app_data.last_used_wallet:
             self.push_screen("welcome")
-            # self.push_screen(EncryptionPassword(app_data))
             return
 
         if app_data.encrypted_db:
@@ -109,6 +136,11 @@ class FluxWallet(App[None]):
         await wallet_landing.new_wallet_created(event.wallet)
 
 
+# for console script
 def run():
     app = FluxWallet()
     app.run()
+
+
+if __name__ == "__main__":
+    run()

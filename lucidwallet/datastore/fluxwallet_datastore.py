@@ -26,27 +26,24 @@ class Timer:
     run_on_start: bool = True
     loop_task: asyncio.Task | None = None
 
-    async def start(self) -> None:
-        if (
-            not self.loop_task
-            or self.loop_task.cancelling()
-            or self.loop_task.cancelled()
-        ):
-            # maybe sleep until task cancelled?
+    def start(self) -> None:
+        if not self.loop_task or self.loop_task.cancelled():
             self.loop_task = asyncio.create_task(self.loop())
 
     async def reset(self, run_on_start: bool = True) -> None:
         self.run_on_start = run_on_start
-        print("IN TIMER RESET IN TIMER")
-        self.stop()
-        await self.start()
 
-    def stop(self) -> None:
+        await self.stop()
+        self.start()
+
+    async def stop(self) -> None:
         if not self.loop_task:
             return
 
+        self.loop_task.cancel()
+
         try:
-            self.loop_task.cancel()
+            await self.loop_task
         except asyncio.CancelledError:
             pass
 
@@ -403,9 +400,9 @@ class FluxWalletDataStore:
     def add_unconfirmed_tx(self, tx: WalletTransaction) -> None:
         self.unconfirmed_txs.append(tx)
 
-    async def start_scan_timer(self) -> None:
+    def start_scan_timer(self) -> None:
         if self.scan_timer:
-            await self.scan_timer.start()
+            self.scan_timer.start()
 
     async def reset_timer(self, run_on_start: bool = True) -> None:
         await self.scan_timer.reset(run_on_start)
