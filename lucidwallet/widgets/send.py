@@ -119,10 +119,7 @@ class Send(Widget):
 
     def __init__(self, address_book: dict[str, str] = {}):
         self.address_book = address_book
-        self.disabled_overlay = Container(
-            Static("Coming soon", id="disabled_send_banner"),
-            id="disabled_send_container",
-        )
+        self.disabled_overlay = Static("Coming soon", id="disabled_send_banner")
         self.disabled_mounted = False
         super().__init__()
 
@@ -190,20 +187,16 @@ class Send(Widget):
             address_book_dom.value = selected
 
     def mount_disabled(self) -> None:
-        print("MOUNT", self.disabled_mounted)
         if not self.disabled_mounted:
             self.disabled_mounted = True
+            self.disabled = True
             self.mount(self.disabled_overlay)
 
     def unmount_disabled(self) -> None:
-        print("UNMOUNT", self.disabled_mounted)
         if self.disabled_mounted:
             self.disabled_mounted = False
+            self.disabled = False
             self.disabled_overlay.remove()
-            self.disabled_overlay = Container(
-                Static("Coming soon", id="disabled_send_banner"),
-                id="disabled_send_container",
-            )
 
     @on(Input.Changed, "#address")
     def address_input_changed(self, event: Input.Changed) -> None:

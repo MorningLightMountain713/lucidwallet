@@ -671,17 +671,14 @@ MnemonicOverlay Grid {
 
 /* SEND */
 
-#disabled_send_container {
-    layer: notification;
-    width: 1fr;
-    height: 1fr;
-    align: center middle;
-}
-
 #disabled_send_banner {
     content-align: center middle;
     layer: notification;
     width: 16;
     height: 8;
     border: yellowgreen;
+}
+
+Send {
+    align: center middle;
 }
