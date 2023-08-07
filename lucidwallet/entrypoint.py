@@ -114,6 +114,3 @@ class FluxWallet(App[None]):
 def run():
     app = FluxWallet()
     app.run()
-
-
-run()
