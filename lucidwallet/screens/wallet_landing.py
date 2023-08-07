@@ -306,7 +306,7 @@ class WalletLanding(Screen):
             send.unmount_disabled()
 
         await self.set_db_last_used_wallet(event.wallet)
-        dt = self.query_one("ScrollDataTable", TransactionHistory.ScrollDataTable)
+        dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
         self.datastore.store_current_network_scroll_height(dt.scroll_y)
 
         await self.datastore.set_current_wallet(event.wallet)
@@ -329,7 +329,7 @@ class WalletLanding(Screen):
         if self.datastore.current_network == event.network:
             return
 
-        dt = self.query_one("ScrollDataTable", TransactionHistory.ScrollDataTable)
+        dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
         self.datastore.store_current_network_scroll_height(dt.scroll_y)
 
         self.datastore.set_current_network(event.network)
@@ -437,7 +437,7 @@ class WalletLanding(Screen):
                 )
                 self.update_dom_on_resume = False
 
-    @on(TransactionHistory.ScrollDataTable.LazyLoadRequested)
+    @on(TransactionHistory.ScrollCenter.LazyLoadRequested)
     def on_lazyload_requested(self) -> None:
         if not self.worker_running("get_tx_from_db_worker"):
             self.get_tx_from_db_worker(force=True)

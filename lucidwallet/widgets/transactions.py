@@ -2,11 +2,12 @@ from time import monotonic
 
 from rich.text import Text
 from textual.app import ComposeResult
-from textual.events import MouseScrollDown
+from textual.events import MouseScrollDown, Focus, DescendantFocus
 from textual.message import Message
 from textual.reactive import var
 from textual.widget import Widget
 from textual.widgets import DataTable, Label, Static
+from textual.containers import Center
 
 from lucidwallet.widgets import TxLoading
 
@@ -40,18 +41,27 @@ class TransactionHistory(Widget):
         padding-bottom: 1;
         background: $panel;
     }
-    TransactionHistory>ScrollDataTable {
-        margin-left: 1;
-        background: $panel;
-        height: 1fr;
-        scrollbar-gutter: stable;
-        max-height: 100%;
-    }
+    # TransactionHistory>Center>ScrollDataTable {
+    #     margin-left: 1;
+    #     background: $panel;
+    #     # height: 1fr;
+    #     # scrollbar-gutter: stable;
+    #     # max-height: 100%;
+    #     width: auto;
+    # }
     """
 
     rows = var([])
 
     class ScrollDataTable(DataTable):
+        def _on_focus(self, event: Focus) -> None:
+            # hack to stop scrolling on DataTable click
+            event.prevent_default()
+            # self.has_focus = True
+            self.refresh()
+            self.post_message(DescendantFocus())
+
+    class ScrollCenter(Center):
         class LazyLoadRequested(Message):
             ...
 
@@ -100,7 +110,9 @@ class TransactionHistory(Widget):
 
     def compose(self) -> ComposeResult:
         yield Label("Previous Transactions", classes="top")
-        yield self.ScrollDataTable(center_table=True)
+
+        yield self.ScrollCenter(self.ScrollDataTable())
+
         yield Label("", classes="bottom")
 
     def on_mount(self) -> None:
@@ -112,7 +124,7 @@ class TransactionHistory(Widget):
         self.rows = self._rows
         table.cursor_type = "row"
 
-    def on_data_table_row_selected(self, event: ScrollDataTable.RowSelected):
+    def on_data_table_row_selected(self, event: DataTable.RowSelected):
         event.stop()
 
         if not event.row_key.value:

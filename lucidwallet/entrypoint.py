@@ -6,8 +6,8 @@ from textual import on
 from textual.app import App
 from textual.binding import Binding
 
-from .helpers import InitAppResponse, init_app
-from .screens import (
+from lucidwallet.helpers import InitAppResponse, init_app
+from lucidwallet.screens import (
     CreateWallet,
     EncryptionPassword,
     FirstRun,
@@ -114,3 +114,6 @@ class FluxWallet(App[None]):
 def run():
     app = FluxWallet()
     app.run()
+
+
+run()

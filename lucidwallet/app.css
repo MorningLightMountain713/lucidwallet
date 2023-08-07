@@ -489,11 +489,25 @@ TxLoading LoadingIndicator {
 }
 
 
+/* Tx history stuff */
 
 TransactionHistory {
     align: center middle;
 }
 
+TransactionHistory>ScrollCenter {
+    height: 1fr;
+    margin-left: 1;
+    overflow: auto;
+    scrollbar-gutter: stable;
+}
+
+TransactionHistory ScrollDataTable {
+    width: auto;
+    /* hack to allow ScrollCenter to scroll */
+    max-height: 9999999999;
+    background: $panel;
+}
 
 /* Encryption password stuff */
 
