@@ -26,7 +26,7 @@ class EncryptionPassword(Screen[tuple[str, bool]]):
         matcher.visible = False
         keychain_switch = self.query_one("Switch", Switch)
 
-        if not self.app.config.keychain_available:
+        if not self.app.config.keyring_available:
             keychain_switch.disabled = True
             keychain_switch.tooltip = (
                 "No keychain found. See https://pypi.org/project/keyring"
