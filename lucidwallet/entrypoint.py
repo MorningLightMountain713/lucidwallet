@@ -25,7 +25,7 @@ import importlib_metadata
 package = "lucidwallet"
 
 
-class FluxWallet(App[None]):
+class LucidWallet(App[None]):
     CSS_PATH = "app.css"
     SCREENS = {
         "welcome": FirstRun(),
@@ -141,7 +141,7 @@ def run():
     # ubuntu by default doesn't have this set, so the colors are weird
     os.environ["COLORTERM"] = "truecolor"
 
-    app = FluxWallet()
+    app = LucidWallet()
     app.run()
 
 

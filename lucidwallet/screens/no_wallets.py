@@ -10,10 +10,10 @@ from textual.widgets import Button, Label
 from lucidwallet.screens import EncryptionPassword
 
 MESSAGE = """
-Welcome to FluxWallet! This looks like your first time here... lets get you setup.
+Welcome to LucidWallet! This looks like your first time here... lets get you setup.
 
 * BIP39 and BIP44 compliant.
-* Supports multiple currencies.
+* Supports multiple currencies. (Soon)
 
 """
 
