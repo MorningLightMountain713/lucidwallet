@@ -78,6 +78,7 @@ async def init_app() -> InitAppResponse:
     except NoKeyringError:
         keyring_available = False
 
+    wallet_networks = []
     if last_used_wallet:
         # this coudl error
         keys = await last_used_wallet.keys_networks()
