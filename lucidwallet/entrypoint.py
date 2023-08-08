@@ -1,6 +1,6 @@
 import hashlib
 from functools import partial
-
+import os
 
 import keyring
 from textual import on, work
@@ -138,6 +138,9 @@ class FluxWallet(App[None]):
 
 # for console script
 def run():
+    # ubuntu by default doesn't have this set, so the colors are weird
+    os.environ["COLORTERM"] = "truecolor"
+
     app = FluxWallet()
     app.run()
 
