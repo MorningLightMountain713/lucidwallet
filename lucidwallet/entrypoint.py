@@ -1,13 +1,13 @@
 import hashlib
-from functools import partial
 import os
 
 import keyring
+
 from textual import on, work
 from textual.app import App
 from textual.binding import Binding
 
-from lucidwallet.helpers import InitAppResponse, init_app
+from lucidwallet.helpers import init_app, InitAppResponse
 from lucidwallet.screens import (
     CreateWallet,
     EncryptionPassword,
@@ -16,8 +16,6 @@ from lucidwallet.screens import (
     MnemonicOverlay,
     WalletLanding,
 )
-
-import asyncio
 
 import httpx
 import importlib_metadata
@@ -39,6 +37,7 @@ class LucidWallet(App[None]):
 
     async def new_version_available(self) -> str | None:
         current_version = importlib_metadata.version(package)
+        # shame we have to download the entire package info for just the version
         async with httpx.AsyncClient() as client:
             response = await client.get(f"https://pypi.org/pypi/{package}/json")
 
@@ -54,20 +53,20 @@ class LucidWallet(App[None]):
                 self.notify, f"New version {new_version} available", timeout=5
             )
 
-    async def valid_password(self, app_data: InitAppResponse) -> bool:
-        return await app_data.last_used_wallet.db.validate_key()
+    async def valid_password(self) -> bool:
+        return await self.config.last_used_wallet.db.validate_key()
 
-    async def encryption_password_callback(
-        self, app_data: InitAppResponse, result: tuple[str, bool]
-    ) -> None:
+    async def encryption_password_callback(self, result: tuple[str, bool]) -> None:
         password, store_in_keychain = result
 
         hashed = hashlib.sha256(bytes(password, "utf8")).hexdigest()
-        app_data.last_used_wallet.db.set_encrypted_key(hashed)
+        self.config.last_used_wallet.db.set_encrypted_key(hashed)
 
-        if not await self.valid_password(app_data):
-            callback = partial(self.encryption_password_callback, app_data)
-            self.push_screen(EncryptionPassword(message="Invalid Password"), callback)
+        if not await self.valid_password():
+            self.push_screen(
+                EncryptionPassword(message="Invalid Password"),
+                self.encryption_password_callback,
+            )
             return
 
         if store_in_keychain:
@@ -75,7 +74,7 @@ class LucidWallet(App[None]):
 
         self.install_screen(
             WalletLanding(
-                app_data.last_used_wallet, app_data.networks, app_data.wallets
+                self.config.last_used_wallet, self.config.networks, self.config.wallets
             ),
             name="wallet_landing",
         )
@@ -86,35 +85,40 @@ class LucidWallet(App[None]):
 
         # push loading screen first, with logo
 
-        app_data = await init_app()
+        self.config = await init_app()
 
-        if not app_data.last_used_wallet:
+        if not self.config.last_used_wallet:
             self.push_screen("welcome")
             return
 
-        if app_data.encrypted_db:
-            password_hash = keyring.get_password("fluxwallet", "fluxwallet_user")
-            # decrypt main key and check for xprv
+        if self.config.encrypted_db:
+            password_hash = ""
+
+            if self.config.keyring_available:
+                password_hash = keyring.get_password("fluxwallet", "fluxwallet_user")
+
             if not password_hash:
-                callback = partial(self.encryption_password_callback, app_data)
-                self.push_screen(EncryptionPassword(), callback)
+                self.push_screen(
+                    EncryptionPassword(), self.encryption_password_callback
+                )
                 return
             else:
                 # this only ever needs to get set once
-                app_data.last_used_wallet.db.set_encrypted_key(password_hash)
+                self.config.last_used_wallet.db.set_encrypted_key(password_hash)
 
-                if not await self.valid_password(app_data):
-                    keyring.delete_password("fluxwallet", "fluxwallet_user")
+                if not await self.valid_password():
+                    if self.config.keyring_available:
+                        keyring.delete_password("fluxwallet", "fluxwallet_user")
 
-                    callback = partial(self.encryption_password_callback, app_data)
                     self.push_screen(
-                        EncryptionPassword(message="Invalid Password"), callback
+                        EncryptionPassword(message="Invalid Password"),
+                        self.encryption_password_callback,
                     )
                     return
 
         self.install_screen(
             WalletLanding(
-                app_data.last_used_wallet, app_data.networks, app_data.wallets
+                self.config.last_used_wallet, self.config.networks, self.config.wallets
             ),
             name="wallet_landing",
         )
@@ -138,12 +142,15 @@ class LucidWallet(App[None]):
 
 # for console script
 def run():
-    # ubuntu by default doesn't have this set, so the colors are weird
+    # ubuntu by default doesn't have truecolor set, so the colors are weird
     os.environ["COLORTERM"] = "truecolor"
+    # just in case it's been modified
+    os.environ["TERM"] = "xterm-256color"
 
     app = LucidWallet()
     app.run()
 
 
+# for textual console
 if __name__ == "__main__":
     run()

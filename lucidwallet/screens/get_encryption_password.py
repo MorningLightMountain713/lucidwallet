@@ -1,23 +1,10 @@
-import re
-from typing import Iterable
-
-# from fluxwallet.db import Db, DbAddressBook
 from textual import on
-from textual.app import App, ComposeResult
-from textual.containers import Center, Container, Horizontal
-from textual.message import Message
+from textual.app import ComposeResult
+from textual.containers import Center, Horizontal
 from textual.reactive import var
 from textual.screen import Screen
-from textual.validation import Function, Length
-from textual.widgets import Button, Input, Select, Static, Switch
-
-
-class Notification(Static):
-    def on_mount(self) -> None:
-        self.set_timer(3, self.remove)
-
-    def on_click(self) -> None:
-        self.remove()
+from textual.validation import Length
+from textual.widgets import Button, Input, Static, Switch
 
 
 class EncryptionPassword(Screen[tuple[str, bool]]):
@@ -37,9 +24,16 @@ class EncryptionPassword(Screen[tuple[str, bool]]):
         password = self.query_one("#input_encryption_password", Input)
         matcher = self.query_one("#password_matcher", Static)
         matcher.visible = False
+        keychain_switch = self.query_one("Switch", Switch)
+
+        if not self.app.config.keychain_available:
+            keychain_switch.disabled = True
+            keychain_switch.tooltip = (
+                "No keychain found. See https://pypi.org/project/keyring"
+            )
 
         if self.message:
-            self.mount(Notification(self.message))
+            self.notify(self.message)
 
         self.set_focus(password)
 
