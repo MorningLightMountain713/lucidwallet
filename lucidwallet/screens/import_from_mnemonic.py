@@ -16,7 +16,7 @@ from textual.validation import Length
 from textual.widget import Widget
 from textual.widgets import Button, Input, Label, Select
 
-from lucidwallet.helpers import Notification, init_app
+from lucidwallet.helpers import init_app
 from lucidwallet.screens import WalletLanding
 
 languages = [
@@ -340,11 +340,8 @@ class ImportFromMnemonic(Screen):
     @on(Input.Submitted, "#nickname")
     def on_nickname_submitted(self, event: Input.Submitted):
         if len(event.value) < 3:
-            self.mount(
-                Notification(
-                    "Nickname must be at least 3 characters", variant="failure"
-                )
-            )
+            self.notify("Nickname must be at least 3 characters", serverity="error")
+
             return
 
         text = self.query_one("#text", Input)
@@ -409,9 +406,8 @@ class ImportFromMnemonic(Screen):
     @on(Input.Changed, "#nickname")
     def on_nickname_changed(self, event: Input.Changed):
         if event.validation_result.failures:
-            self.mount(
-                Notification(event.validation_result.failures, variant="failure")
-            )
+            self.notify(event.validation_result.failures, serverity="error")
+
             return
 
         if event.value:

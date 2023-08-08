@@ -12,21 +12,25 @@ from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Static
 
 
-class Notification(Static):
-    def on_mount(self) -> None:
-        self.set_timer(3, self.remove)
+# class Notification(Static):
+#     def on_mount(self) -> None:
+#         self.set_timer(3, self.remove)
 
-    def on_click(self) -> None:
-        self.remove()
+#     def on_click(self) -> None:
+#         self.remove()
 
 
 class CopyLabel(Label):
     def action_copy_clipboard(self, text: str):
-        pyperclip.copy(text)
-        self.post_message(self.Copied())
+        try:
+            self.app.config.copy_callback(text)
+        except Exception:  # Fix
+            self.notify("No clipboard available", severity="warning")
+        else:
+            self.notify("Copied")
 
-    class Copied(Message):
-        ...
+    # class Copied(Message):
+    #     ...
 
 
 class SignMessageOverlay(Screen):
@@ -105,8 +109,8 @@ class SignMessageOverlay(Screen):
 
         return SignMessage(self.key, message).decode()
 
-    def on_copy_label_copied(self):
-        self.mount(Notification(Text("Copied!")))
+    # def on_copy_label_copied(self):
+    #     self.mount(Notification(Text("Copied!")))
 
 
 if __name__ == "__main__":

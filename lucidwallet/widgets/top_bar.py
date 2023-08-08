@@ -19,8 +19,12 @@ class Notification(Static):
 
 class CopyLabel(Label):
     def action_copy_clipboard(self, text: str):
-        pyperclip.copy(text)
-        self.post_message(self.Copied())
+        try:
+            self.app.config.copy_callback(text)
+        except Exception:  # Fix
+            self.notify("No clipboard available", severity="warning")
+        else:
+            self.post_message(self.Copied())
 
     class Copied(Message):
         ...

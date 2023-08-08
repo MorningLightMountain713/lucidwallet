@@ -5,25 +5,28 @@ from fluxwallet.wallet import Wallet
 from sqlalchemy import select
 from textual.widgets import Static
 
+from collections.abc import Callable
+
 import keyring
 from keyring.errors import NoKeyringError
 import secrets
+import pyperclip
+
+import base64
 
 
-class Notification(Static):
-    def __init__(self, text: str, variant: str = "success", duration: int = 3):
-        super().__init__(text)
-        self.duration = duration
-        if variant == "success":
-            self.styles.outline = ("tall", "green")
-        else:
-            self.styles.outline = ("tall", "red")
+def write_tty(data: bytes) -> None:
+    with open("/dev/tty", "wb") as f:
+        f.write(data)
+        f.flush()
 
-    def on_mount(self) -> None:
-        self.set_timer(self.duration, self.remove)
 
-    def on_click(self) -> None:
-        self.remove()
+def osc52_copy(data: str) -> None:
+    data = bytes(data, encoding="utf-8")
+    encoded = base64.b64encode(data)
+    buffer = b"\033]52;p;" + encoded + b"\a"
+
+    write_tty(buffer)
 
 
 @dataclass
@@ -33,6 +36,7 @@ class InitAppResponse:
     encrypted_db: bool = False
     networks: list[str] = field(default_factory=list)
     keyring_available: bool = False
+    copy_callback: Callable | None = None
 
 
 async def get_db_info() -> tuple[Wallet | None, list[str], bool]:
@@ -78,6 +82,14 @@ async def init_app() -> InitAppResponse:
     except NoKeyringError:
         keyring_available = False
 
+    try:
+        # this will remove any copied stuff though
+        pyperclip.copy("")
+    except pyperclip.PyperclipException:
+        copy_callback = osc52_copy
+    else:
+        copy_callback = pyperclip.copy
+
     wallet_networks = []
     if last_used_wallet:
         # this coudl error
@@ -90,4 +102,5 @@ async def init_app() -> InitAppResponse:
         db_encrypted,
         wallet_networks,
         keyring_available,
+        copy_callback,
     )

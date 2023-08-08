@@ -113,9 +113,12 @@ class MnemonicOverlay(ModalScreen[bool]):
 
         elif event.button.id == "copy":
             word_str = " ".join(self.words)
-            pyperclip.copy(word_str)
-            self.notify("Mnemonic copied!")
-            # self.mount(Notification("Copied!"))
 
+            try:
+                self.app.config.copy_callback(word_str)
+            except Exception:  # Fix
+                self.notify("No clipboard available", severity="warning")
+            else:
+                self.notify("Mnemonic copied!")
         else:  # exit
             self.app.switch_screen("wallet_landing")

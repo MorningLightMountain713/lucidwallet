@@ -8,7 +8,7 @@ from textual import on, work
 from textual.app import App
 from textual.binding import Binding
 
-from lucidwallet.helpers import init_app, InitAppResponse
+from lucidwallet.helpers import init_app
 from lucidwallet.screens import (
     CreateWallet,
     EncryptionPassword,
@@ -20,6 +20,7 @@ from lucidwallet.screens import (
 
 import httpx
 import importlib_metadata
+
 
 package = "lucidwallet"
 
