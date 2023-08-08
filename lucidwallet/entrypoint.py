@@ -2,6 +2,7 @@ import hashlib
 import os
 
 import keyring
+from packaging import version
 
 from textual import on, work
 from textual.app import App
@@ -37,14 +38,22 @@ class LucidWallet(App[None]):
 
     async def new_version_available(self) -> str | None:
         current_version = importlib_metadata.version(package)
+        current_version = version.parse(current_version)
         # shame we have to download the entire package info for just the version
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"https://pypi.org/pypi/{package}/json")
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(f"https://pypi.org/pypi/{package}/json")
+        except httpx.HTTPError:
+            return
 
-        latest_version = response.json()["info"]["version"]
+        try:
+            latest_version = response.json()["info"]["version"]
+        except KeyError:
+            return
 
-        if current_version != latest_version:
-            return latest_version
+        latest_version = version.parse(latest_version)
+
+        return latest_version if latest_version > current_version else None
 
     @work(name="version_check")
     async def version_check(self) -> None:
