@@ -113,7 +113,7 @@ class DarkSwitch(Horizontal):
 
 class Sidebar(Container):
     def compose(self) -> ComposeResult:
-        yield Title("Fluxwallet Menu")
+        yield Title("Lucidwallet Menu")
         yield OptionGroup(Navigation(NAV_LINKS), Version())
         yield DarkSwitch()
 
@@ -127,7 +127,7 @@ class Sidebar(Container):
 
 class WalletLanding(Screen):
     # CSS_PATH = "wallet.css"
-    TITLE = "Fluxwallet"
+    TITLE = "Lucidwallet"
     BINDINGS = [("ctrl+z", "toggle_sidebar", "Sidebar")]
 
     show_sidebar = reactive(False)
