@@ -154,7 +154,7 @@ class WalletLanding(Screen):
 
         self.datastore = FluxWalletDataStore(
             wallet_names=set(wallets),
-            scan_timer=Timer(self.periodic_scan, 60, run_on_start=True),
+            scan_timer=Timer(self.periodic_scan, 30, run_on_start=True),
         )
         self.tx_events: asyncio.Queue = asyncio.Queue()
         self.update_dom_on_resume = True

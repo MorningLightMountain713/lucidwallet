@@ -61,7 +61,7 @@ class CreateWallet(Screen):
     BINDINGS = [
         (
             "escape",
-            "app.pop_screen()",
+            "reset_and_dismiss()",
             "home",
         ),
     ]
@@ -94,10 +94,11 @@ class CreateWallet(Screen):
     def on_mount(self) -> None:
         self.wallet_names = []
 
-        self.store_wallet_names()
-
         input = self.query_one("Input", Input)
         input.focus()
+
+    def on_screen_resume(self) -> None:
+        self.store_wallet_names()
 
     def on_input_changed(self, event: Input.Changed) -> None:
         if event.validation_result.failures:
@@ -135,10 +136,11 @@ class CreateWallet(Screen):
 
             self.app.push_screen(MnemonicOverlay(self.nickname, mnemonic))
 
-            self.reset_all()
-        else:
-            self.reset_all()
-            self.dismiss()
+        self.action_reset_and_dismiss()
+
+    def action_reset_and_dismiss(self) -> None:
+        self.reset_all()
+        self.dismiss()
 
     def watch_nickname(self, new_value) -> None:
         create = self.query_one("#wallet_create", Button)

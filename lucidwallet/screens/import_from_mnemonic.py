@@ -112,7 +112,7 @@ class ImportFromMnemonic(Screen):
     BINDINGS = [
         (
             "escape",
-            "app.pop_screen()",
+            "reset_and_dismiss()",
             "home",
         ),
     ]
@@ -142,6 +142,7 @@ class ImportFromMnemonic(Screen):
     def on_mount(self) -> None:
         self.wallet_names = []
 
+    def on_screen_resume(self) -> None:
         self.store_wallet_names()
 
     def compose(self) -> ComposeResult:
@@ -463,6 +464,10 @@ class ImportFromMnemonic(Screen):
 
         self.selected_word.remove_class("-focused")
         self.validate_words()
+
+    def action_reset_and_dismiss(self) -> None:
+        self.reset_all()
+        self.dismiss()
 
     # @on(WalletLandingRequested)
     # def wallet_landing_requested(self, event: WalletLandingRequested):
