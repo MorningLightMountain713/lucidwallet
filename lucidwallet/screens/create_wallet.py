@@ -135,8 +135,9 @@ class CreateWallet(Screen):
             mnemonic = Mnemonic(lang_picker.language).generate()
 
             self.app.push_screen(MnemonicOverlay(self.nickname, mnemonic))
-
-        self.action_reset_and_dismiss()
+            self.reset_all()
+        else:
+            self.action_reset_and_dismiss()
 
     def action_reset_and_dismiss(self) -> None:
         self.reset_all()
