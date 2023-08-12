@@ -9,7 +9,9 @@ from textual.message import Message
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
-from lucidwallet.helpers import InitAppResponse, init_app
+import asyncio
+
+from lucidwallet.helpers import init_app
 from lucidwallet.screens import WalletLanding
 
 MNEMONIC_TEXT = """Here is your new mnemonic. You will only get to see this once.
@@ -97,7 +99,7 @@ class MnemonicOverlay(ModalScreen[bool]):
 
             self.post_message(self.WalletCreated(wallet))
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "reveal":
             dom_words = self.query("Grid>Static")
             if str(event.button.label) == "Reveal":
@@ -120,5 +122,9 @@ class MnemonicOverlay(ModalScreen[bool]):
                 self.notify("No clipboard available", severity="warning")
             else:
                 self.notify("Mnemonic copied!")
-        else:  # exit
+        else:
+            # this is ugly, only seems to be docker that's slow??
+            while not self.app.is_screen_installed("wallet_landing"):
+                await asyncio.sleep(0.05)
+
             self.app.switch_screen("wallet_landing")

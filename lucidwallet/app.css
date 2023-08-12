@@ -429,7 +429,7 @@ ImportKeyToWallet Container {
 
 Toast {
     width: auto;
-    border: yellowgreen;
+    /* border: yellowgreen; */
 }
 
 

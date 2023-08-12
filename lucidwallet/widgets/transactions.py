@@ -145,11 +145,13 @@ class TransactionHistory(Widget):
     async def set_loading(self) -> None:
         if not self.loading:
             self.loading = True
+            self.disabled = True
             self.call_after_refresh(self.mount, self.loading_widget)
 
     def unset_loading(self) -> None:
         if self.loading:
             self.loading = False
+            self.disabled = False
             self.call_after_refresh(self.loading_widget.remove)
 
     def scroll(self, y: float) -> None:

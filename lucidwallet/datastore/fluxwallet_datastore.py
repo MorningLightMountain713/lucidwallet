@@ -159,6 +159,9 @@ class FluxWalletDataStore:
 
         return balance
 
+    async def current_network_balance(self) -> float:
+        return await self.balance(self.current_wallet, self.current_network)
+
     async def set_current_wallet(self, wallet: str | Wallet) -> None:
         if not self.exists(wallet):
             await self.store_wallet(wallet)

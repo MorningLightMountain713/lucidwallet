@@ -6,7 +6,7 @@ from functools import partial
 from fluxwallet.db_new import Db, DbAddressBook, DbConfig
 from fluxwallet.keys import HDKey
 from fluxwallet.values import Value
-from fluxwallet.wallet import Wallet, WalletKey, WalletTransaction
+from fluxwallet.wallet import Wallet, WalletKey, WalletTransaction, WalletError
 from importlib_metadata import version
 from rich.console import RenderableType
 from sqlalchemy import select
@@ -41,16 +41,6 @@ NAV_LINKS = """
 [@click="follow_nav('encrypt_database')"]Encrypt Database Keys[/]
 
 """
-
-
-# class ScanType(Enum):
-#     PERIODIC = "PERIODIC"
-#     NEW_KEY = "NEW_KEY"
-#     FULL_WALLET = "FULL_WALLET"
-
-
-class FluxWalletError(Exception):
-    ...
 
 
 class Navigation(Static):
@@ -216,6 +206,7 @@ class WalletLanding(Screen):
         return bool(next(filter(lambda x: x.group == worker_name, self.workers), None))
 
     # should this be on the datastore
+    @work(group="set_db_last_used_wallet", exclusive=True)
     async def set_db_last_used_wallet(self, wallet_name: str) -> None:
         async with self.db.get_session() as session:
             await session.merge(
@@ -295,61 +286,86 @@ class WalletLanding(Screen):
                 self.screen.set_focus(None)
             sidebar.add_class("-hidden")
 
+    @work(group="set_current", exclusive=True)
+    async def set_current_and_update_dom(
+        self, *, wallet: str | None = None, network: str | None = None
+    ) -> None:
+        dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
+        self.datastore.store_current_network_scroll_height(dt.scroll_y)
+        print("SET CURRENT")
+        send = self.query_one("Send", Send)
+
+        if wallet:
+            if self.datastore.current_network != "flux":
+                send.unmount_disabled()
+            await self.datastore.set_current_wallet(wallet)
+
+        if network:
+            if network != "flux":
+                send.mount_disabled()
+            else:
+                send.unmount_disabled()
+            self.datastore.set_current_network(network)
+        # current_network_scanning = self.datastore.is_current_network_scanning()
+
+        # if self.datastore.tx_history_scanning and not current_network_scanning:
+        #     self.datastore.tx_history_scanning = False
+        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningEnd))
+
+        # if not self.datastore.tx_history_scanning and current_network_scanning:
+        #     self.datastore.tx_history_scanning = True
+        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
+
+        await self.update_dom()
+        await self.datastore.reset_timer()
+
     @on(TopBar.WalletSelected)
     async def on_topbar_wallet_selected(self, event: TopBar.WalletSelected) -> None:
         if self.datastore.current_wallet == event.wallet:
             return
 
         # hack
-        send = self.query_one("Send", Send)
-        if self.datastore.current_network != "flux":
-            send.unmount_disabled()
+        # this is before we've set the current_network so bitcoin -> flux
+        # send = self.query_one("Send", Send)
+        # if self.datastore.current_network != "flux":
+        #     send.unmount_disabled()
 
-        await self.set_db_last_used_wallet(event.wallet)
-        dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
-        self.datastore.store_current_network_scroll_height(dt.scroll_y)
+        # this is a worker now - db call.
+        self.set_db_last_used_wallet(event.wallet)
 
-        await self.datastore.set_current_wallet(event.wallet)
+        # dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
+        # self.datastore.store_current_network_scroll_height(dt.scroll_y)
 
-        current_network_scanning = self.datastore.is_current_network_scanning()
-
-        if self.datastore.tx_history_scanning and not current_network_scanning:
-            self.datastore.tx_history_scanning = False
-            self.tx_events.put_nowait(Event(type=Event.EventType.ScanningEnd))
-
-        if not self.datastore.tx_history_scanning and current_network_scanning:
-            self.datastore.tx_history_scanning = True
-            self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
-
-        await self.update_dom()
-        await self.datastore.reset_timer()
+        self.set_current_and_update_dom(wallet=event.wallet)
 
     @on(TopBar.NetworkSelected)
     async def on_topbar_network_selected(self, event: TopBar.NetworkSelected) -> None:
         if self.datastore.current_network == event.network:
             return
 
-        dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
-        self.datastore.store_current_network_scroll_height(dt.scroll_y)
+        # dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
+        # self.datastore.store_current_network_scroll_height(dt.scroll_y)
 
-        self.datastore.set_current_network(event.network)
+        self.set_current_and_update_dom(network=event.network)
 
-        send = self.query_one("Send", Send)
-        if event.network != "flux":
-            send.mount_disabled()
-        else:
-            send.unmount_disabled()
+        # self.datastore.set_current_network(event.network)
 
-        current_network_scanning = self.datastore.is_current_network_scanning()
+        # send = self.query_one("Send", Send)
+        # if event.network != "flux":
+        #     send.mount_disabled()
+        # else:
+        #     send.unmount_disabled()
 
-        if self.datastore.tx_history_scanning and not current_network_scanning:
-            self.tx_events.put_nowait(Event(type=Event.EventType.ScanningEnd))
+        # current_network_scanning = self.datastore.is_current_network_scanning()
 
-        if not self.datastore.tx_history_scanning and current_network_scanning:
-            self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
+        # if self.datastore.tx_history_scanning and not current_network_scanning:
+        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningEnd))
 
-        await self.update_dom()
-        await self.datastore.reset_timer()
+        # if not self.datastore.tx_history_scanning and current_network_scanning:
+        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
+
+        # await self.update_dom()
+        # await self.datastore.reset_timer()
 
     @on(Send.AddressBookUpdateRequested)
     def on_address_book_update(self, event: Send.AddressBookUpdateRequested) -> None:
@@ -393,7 +409,15 @@ class WalletLanding(Screen):
         self.query_one("Send", Send).clear_fields()
 
     @on(Send.SendTxRequested)
-    def on_send_tx_requested(self, event: Send.SendTxRequested):
+    async def on_send_tx_requested(self, event: Send.SendTxRequested):
+        balance = await self.datastore.current_network_balance()
+        # Do this better, in fact, sort out the fee in FluxWallet too
+        if float(event.amount) > float(Value(balance) - Value("225 sat")):
+            self.notify(
+                f"Not enough funds, {event.amount} + 225 Dibis > {balance}", timeout=5
+            )
+            return
+
         tx_confirm_callback = partial(
             self.tx_overlay_callback, event.address, event.amount, event.message
         )
@@ -453,14 +477,14 @@ class WalletLanding(Screen):
 
         print("NEW TXS", event.new_transactions)
 
+        if event.scan_type != ScanType.PERIODIC:
+            # maybe this needs a worker... (db call for balance)
+            await self.update_dom()
+            return
+
         if event.new_transactions:
-            if event.scan_type != ScanType.PERIODIC:
-                await self.tx_events.put(Event(type=Event.EventType.ClearTable))
-
             await self.set_dom_spend_details()
-
             limit = min(60, event.new_transactions)
-
             self.get_tx_from_db_worker(force=True, latest_only=True, limit=limit)
 
     @on(TopBar.RescanAllRequested)
@@ -471,6 +495,7 @@ class WalletLanding(Screen):
     async def on_screen_resume(self) -> None:
         # hack until I can think of how to do it better
         if self.update_dom_on_resume:
+            print("UPDATING DOM ON RESUME")
             await self.update_dom()
         self.update_dom_on_resume = True
 
@@ -497,7 +522,7 @@ class WalletLanding(Screen):
         wallet_key = await wallet.import_key(key, network=network_name)
 
         if wallet_key:
-            self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
+            # self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
             self.key_scan(wallet_key)
         else:
             self.app.notify("Key already imported")
@@ -508,9 +533,14 @@ class WalletLanding(Screen):
 
         wallet = self.datastore.get_current_wallet()
 
-        wt: WalletTransaction = await wallet.transaction_create(
-            [(address, value)], message=message
-        )
+        try:
+            wt: WalletTransaction = await wallet.transaction_create(
+                [(address, value)], message=message
+            )
+        except WalletError as e:
+            self.notify(e)
+            return
+
         # maybe to_thread this. Benchmarked at 5ms. Fine.
         wt.sign()
         await wt.send()
@@ -525,6 +555,16 @@ class WalletLanding(Screen):
         self.post_message(message)
 
     async def update_dom(self) -> None:
+        current_network_scanning = self.datastore.is_current_network_scanning()
+
+        if self.datastore.tx_history_scanning and not current_network_scanning:
+            self.datastore.tx_history_scanning = False
+            self.tx_events.put_nowait(Event(type=Event.EventType.ScanningEnd))
+
+        if not self.datastore.tx_history_scanning and current_network_scanning:
+            self.datastore.tx_history_scanning = True
+            self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
+
         await self.set_dom_spend_details()
         self.set_dom_wallet_details()
 
@@ -606,15 +646,12 @@ class WalletLanding(Screen):
     async def full_wallet_scan(self) -> None:
         await self.datastore.reset_timer(run_on_start=False)
         self.datastore.reset_current_wallet_datastore()
-        self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
+        # self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
 
         wallet = self.datastore.get_current_wallet()
         network = self.datastore.get_current_network()
 
         await self.scan_network(wallet, network, scan_type=ScanType.FULL_WALLET)
-
-        if self.is_current:
-            await self.update_dom()
 
     def set_scanning_for_network(self, wallet_name: str, network_name: str) -> None:
         self.datastore.set_scanning_for_network(wallet_name, network_name)
@@ -659,7 +696,6 @@ class WalletLanding(Screen):
         if scan_type == ScanType.FULL_WALLET:
             rescan_used = True
 
-        # this is wrong, don't use current
         if self.datastore.is_network_first_scan(wallet.name, network) or rescan_used:
             self.datastore.set_network_scanned(wallet.name, network)
             change = None
