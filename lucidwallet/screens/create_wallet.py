@@ -9,6 +9,8 @@ from textual.screen import Screen
 from textual.validation import Length
 from textual.widget import Widget
 from textual.widgets import Button, Input, Label, Select, Static
+from textual import work
+
 
 from lucidwallet.helpers import init_app
 from lucidwallet.screens import MnemonicOverlay
@@ -90,6 +92,10 @@ class CreateWallet(Screen):
         )
 
     def on_mount(self) -> None:
+        self.wallet_names = []
+
+        self.store_wallet_names()
+
         input = self.query_one("Input", Input)
         input.focus()
 
@@ -111,14 +117,17 @@ class CreateWallet(Screen):
         lang_picker.reset()
         input.focus()
 
+    @work(group="store_wallet_names", exclusive=True)
+    async def store_wallet_names(self) -> None:
+        app_data = await init_app()
+        self.wallet_names = app_data.wallets
+
     async def on_button_pressed(self, event: Button.Pressed):
         event.stop()
         if event.button.id == "wallet_create":
             print("WALLET CREATE")
-            # wallet_name = self.query_one("Input", Input)
-            app_data = await init_app()
-            if self.nickname in app_data.wallets:
-                self.notify("Wallet name exists")
+            if self.nickname in self.wallet_names:
+                self.notify("Wallet name already exists")
                 return
 
             lang_picker = self.query_one("LanguagePicker", LanguagePicker)

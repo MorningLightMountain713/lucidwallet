@@ -486,6 +486,7 @@ class WalletLanding(Screen):
             await self.set_dom_spend_details()
             limit = min(60, event.new_transactions)
             self.get_tx_from_db_worker(force=True, latest_only=True, limit=limit)
+            self.notify("New Tx received", timeout=10)
 
     @on(TopBar.RescanAllRequested)
     async def on_rescan_all_requested(self) -> None:
@@ -499,13 +500,10 @@ class WalletLanding(Screen):
             await self.update_dom()
         self.update_dom_on_resume = True
 
-    # could probably remove this as a worker
-    @work()
-    async def import_key_callback(self, result: tuple | None) -> None:
-        if not result:
-            return
-
-        wallet_name, network_name, private_key = result
+    @work(group="import_key_and_scan")
+    async def import_key_and_scan(
+        self, wallet_name: str, network_name: str, private_key: str
+    ) -> None:
         key = HDKey(private_key, network=network_name)
 
         if (
@@ -525,7 +523,14 @@ class WalletLanding(Screen):
             # self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
             self.key_scan(wallet_key)
         else:
-            self.app.notify("Key already imported")
+            self.notify("Key already imported")
+
+    async def import_key_callback(self, result: tuple | None) -> None:
+        if not result:
+            return
+
+        wallet_name, network_name, private_key = result
+        self.import_key_and_scan(wallet_name, network_name, private_key)
 
     @work()
     async def send_transaction(self, address: str, amount: float, message: str):
@@ -591,6 +596,7 @@ class WalletLanding(Screen):
 
                 tx_history = self.query_one("TransactionHistory", TransactionHistory)
                 tx_history.update_date_time(wt.tx.txid, date, time)
+                self.notify(f"Tx @ {time} confirmed", timeout=10)
 
         self.datastore.unconfirmed_txs = [
             x for x in self.datastore.unconfirmed_txs if not x.status == "confirmed"

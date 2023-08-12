@@ -139,6 +139,11 @@ class ImportFromMnemonic(Screen):
     #         self.networks = networks
     #         super().__init__()
 
+    def on_mount(self) -> None:
+        self.wallet_names = []
+
+        self.store_wallet_names()
+
     def compose(self) -> ComposeResult:
         self.mnemonic = WalletMnemonic()
 
@@ -257,6 +262,11 @@ class ImportFromMnemonic(Screen):
         else:
             submit.disabled = True
 
+    @work(group="store_wallet_names", exclusive=True)
+    async def store_wallet_names(self) -> None:
+        app_data = await init_app()
+        self.wallet_names = app_data.wallets
+
     @on(MnemonicWord.MnemonicWordFocused)
     def on_mnemonic_word_focused(self, event: MnemonicWord.MnemonicWordFocused):
         if self.selected_word:
@@ -359,8 +369,7 @@ class ImportFromMnemonic(Screen):
         mnemonic = self.get_mnemonic_from_dom()
         # need to validate the mnemonic first, if someone just enters words willy nilly, willl get checksum error
         # ValueError: Invalid checksum 1000 for entropy b'\xc8\xcfum\x8dq9{\xafjLe\x97/\x14\x8b'
-        app_data = await init_app()
-        if self.nickname in app_data.wallets:
+        if self.nickname in self.wallet_names:
             self.app.notify("Wallet name already exists")
             event.button.disabled = False
             return
