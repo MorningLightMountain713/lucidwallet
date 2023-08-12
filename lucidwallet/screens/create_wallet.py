@@ -141,7 +141,10 @@ class CreateWallet(Screen):
 
     def action_reset_and_dismiss(self) -> None:
         self.reset_all()
-        self.dismiss()
+        if self.app.is_screen_installed("wallet_landing"):
+            self.dismiss()
+        else:
+            self.app.switch_screen("welcome")
 
     def watch_nickname(self, new_value) -> None:
         create = self.query_one("#wallet_create", Button)
