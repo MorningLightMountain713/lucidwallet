@@ -170,7 +170,10 @@ class WalletLanding(Screen):
             networks=self.initial_wallet_networks,
             wallets=list(self.datastore.wallet_names),
         )
-        yield (Horizontal(Send(), TransactionHistory([])))
+        with Horizontal():
+            yield Send()
+            yield TransactionHistory([])
+
         yield Footer()
 
     @work(group="get_tx_from_db_worker")
