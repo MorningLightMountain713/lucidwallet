@@ -2,6 +2,7 @@
 from .address_book_overlay import AddressBookOverlay
 from .address_book import AddressBook
 
+
 # txsentoverlay before wallet_landing
 # txoverlay before wallet_landing
 # sign_message_overlay before wallet_landiong
@@ -15,10 +16,12 @@ from .sign_message_overlay import SignMessageOverlay
 from .sendtx_overlay import SendTxOverlay
 from .import_key_to_wallet import ImportKeyToWallet
 from .wallet_landing import WalletLanding
+from .get_encryption_password import EncryptionPassword
+from .loading import LoadingScreen
 from .mnemonic_overlay import MnemonicOverlay
 from .create_wallet import CreateWallet
 
-from .get_encryption_password import EncryptionPassword
+
 from .import_from_mnemonic import ImportFromMnemonic
 
 from .keychain_overlay import KeychainOverlay

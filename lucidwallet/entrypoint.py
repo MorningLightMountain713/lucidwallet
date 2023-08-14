@@ -8,8 +8,10 @@ from textual import on, work
 from textual.app import App
 from textual.binding import Binding
 
+import asyncio
 from lucidwallet.helpers import init_app
 from lucidwallet.screens import (
+    LoadingScreen,
     CreateWallet,
     EncryptionPassword,
     FirstRun,
@@ -31,6 +33,7 @@ class LucidWallet(App[None]):
         "welcome": FirstRun(),
         "create_wallet": CreateWallet(),
         "from_mnemonic": ImportFromMnemonic(),
+        "loading": LoadingScreen(),
     }
     BINDINGS = [
         ("ctrl+t", "app.toggle_dark", "Toggle Dark mode"),
@@ -90,10 +93,8 @@ class LucidWallet(App[None]):
         )
         self.push_screen("wallet_landing")
 
-    async def on_mount(self) -> None:
+    async def boot(self) -> None:
         self.version_check()
-
-        # push loading screen first, with logo
 
         self.config = await init_app()
 
@@ -133,6 +134,14 @@ class LucidWallet(App[None]):
             name="wallet_landing",
         )
         self.push_screen("wallet_landing")
+
+    # async def on_load(self) -> None:
+    #     self.push_screen("loading")
+
+    async def on_mount(self) -> None:
+        # await self.boot()
+        # push loading screen first, with logo
+        self.push_screen("loading")
 
     # fix these
     @on(MnemonicOverlay.WalletCreated)

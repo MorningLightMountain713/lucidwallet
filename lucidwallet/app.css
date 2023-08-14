@@ -19,6 +19,10 @@ WalletLanding {
     overflow: hidden;
 }
 
+WalletLanding>Horizontal {
+    width: 100%;
+}
+
 #first_time {
     width: 80%;
     height: auto;
@@ -173,12 +177,6 @@ TxSentOverlay>Container>Horizontal {
     background: black 80%;
 }
 
-TopBar Label {
-    padding: 0 1 0 1;
-    content-align: center middle;
-    border: tall black;
-    outline: tall $primary;
-}
 
 TopBar>Container {
     layer: below;
@@ -206,6 +204,7 @@ TopBar Select {
 }
 
 #balance {
+    content-align: center middle;
     width: auto;
     min-width: 20;
 }
@@ -216,6 +215,7 @@ TopBar Label {
     border: tall black;
     layer: below;
     outline: tall $primary;
+    background: $boost;
 }
 
 TopBar Select SelectCurrent {
@@ -228,6 +228,7 @@ TopBar {
     padding: 0;
     height: 5;
     layout: horizontal;
+
     border: tall $primary;
     layers: below above;
     background: $panel;
@@ -469,12 +470,12 @@ TxLoading LoadingIndicator {
     layer: notification;
 }
 
-#weiner_town {
+/* #weiner_town {
     layer: notification;
     border: greenyellow;
     width: 16;
     height: 9
-}
+} */
 
 
 #tx_loading_scanning {
@@ -490,25 +491,7 @@ TxLoading LoadingIndicator {
 }
 
 
-/* Tx history stuff */
 
-TransactionHistory {
-    align: center middle;
-}
-
-TransactionHistory>ScrollCenter {
-    height: 1fr;
-    margin-left: 1;
-    overflow: auto;
-    scrollbar-gutter: stable;
-}
-
-TransactionHistory ScrollDataTable {
-    width: auto;
-    /* hack to allow ScrollCenter to scroll */
-    max-height: 9999999999;
-    background: $panel;
-}
 
 /* Encryption password stuff */
 
@@ -670,7 +653,58 @@ MnemonicOverlay Grid {
 
 }
 
+
+
+/* Network Bar */
+
+NetworkBar {
+    width: 1fr;
+    margin: 0 1 1 0;
+    layout: horizontal;
+    background: $panel;
+    height: 3;
+
+}
+
+.networkbar_item {
+    border: tall $primary;
+    margin: 0;
+    padding: 0;
+    content-align: center middle;
+    background: $panel;
+    width: 1fr;
+}
+
+NetworkBar>Button {
+    dock: right;
+    margin: 0;
+    padding: 0;
+    height: auto;
+    min-width: 0;
+    width: auto;
+}
+
+NetworkBar>Button:focus {
+    text-style: none;
+    outline-top: tall black;
+    background: black 80%;
+}
+
 /* SEND */
+
+Send {
+    width: 50%;
+    margin-bottom: 1;
+    margin-right: 0;
+    padding-right: 0;
+    /* min-width: 60; */
+    outline: tall $primary;
+
+    background: $panel;
+    layers: default notification;
+    /* align: center middle; */
+
+}
 
 #disabled_send_banner {
     content-align: center middle;
@@ -678,8 +712,157 @@ MnemonicOverlay Grid {
     width: 16;
     height: 8;
     border: yellowgreen;
+    visibility: visible;
 }
 
-Send {
+#disabled_container {
+    align: center middle;
+    layer: notification;
+    visibility: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+
+Send>Input {
+    margin: 1;
+}
+
+Send>Horizontal {
+    margin-top: 1;
+    margin-left: 1;
+    height: 5;
+}
+
+Send>Horizontal>Select {
+    width: 1fr;
+    max-height: 3;
+    margin-left: 2;
+}
+
+Send>Input {
+    border: tall $primary;
+}
+
+Send>Horizontal>Input {
+    width: 2fr;
+    border: tall $primary;
+    # margin: 1;
+}
+
+Send>Center {
+    margin-left: 1;
+    margin-top: 1;
+}
+
+#save {
+    margin: 0;
+    padding: 0;
+    height: auto;
+    min-width: 0;
+    width: auto;
+}
+
+#save:focus {
+    text-style: none;
+    outline-top: tall black;
+    background: black 80%;
+}
+
+#buttons {
+    margin-left: 1;
+    margin-top: 1;
     align: center middle;
 }
+
+#all_funds {
+    margin: 0;
+    padding-right: 1;
+    margin-left: 1;
+    outline-right: tall black;
+    min-width: 0;
+}
+
+#all_funds:focus {
+    text-style: none;
+    outline-top: tall black;
+    background: black 80%;
+}
+
+Send>Horizontal>Button {
+    margin: 1;
+
+}
+
+Send>Horizontal>Select>SelectCurrent {
+    border: tall $primary;
+    max-height: 3;
+}
+
+Send>Horizontal>Select>SelectCurrent Static#label {
+    overflow: hidden;
+}
+
+/* Transactions */
+
+TransactionHistory {
+    align: center middle;
+    width: 50%;
+    /* margin-top: 1; */
+    padding-left: 0;
+    margin-left: 0;
+    margin-bottom: 1;
+    background: $panel;
+    outline-top: tall $primary;
+    outline-left: tall $primary;
+    outline-right: tall $primary;
+    layers: base notifications;
+}
+
+/* Tx history stuff */
+
+
+TransactionHistory>ScrollCenter {
+    height: 1fr;
+    margin-left: 1;
+    overflow: auto;
+    scrollbar-gutter: stable;
+}
+
+TransactionHistory ScrollDataTable {
+    width: auto;
+    /* hack to allow ScrollCenter to scroll */
+    max-height: 9999999999;
+    background: $panel;
+}
+
+.top {
+    /* outline-top: tall $primary; */
+    width: 100%;
+    height: 3;
+    margin: 0 1 0 1;
+    content-align: center middle;
+    background: $panel;
+}
+
+.bottom {
+    outline-bottom: tall $primary;
+    width: 100%;
+    height: 2;
+    margin: 0 1 0 1;
+    padding-bottom: 1;
+    background: $panel;
+}
+
+/*
+# TransactionHistory>Center>ScrollDataTable {
+    # margin-left: 1;
+    # background: $panel;
+    # # height: 1fr;
+    # # scrollbar-gutter: stable;
+    # # max-height: 100%;
+    # width: auto;
+    #
+
+}
+*/

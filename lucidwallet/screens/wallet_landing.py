@@ -1,6 +1,6 @@
 import asyncio
-import time
-from enum import Enum
+import socketio
+
 from functools import partial
 
 from fluxwallet.db_new import Db, DbAddressBook, DbConfig
@@ -28,7 +28,7 @@ from lucidwallet.screens import (
     TxOverlay,
     TxSentOverlay,
 )
-from lucidwallet.widgets import Send, TopBar, TransactionHistory
+from lucidwallet.widgets import Send, TopBar, NetworkBar, TransactionHistory
 
 # from textual.css.query import NoMatches
 
@@ -154,15 +154,24 @@ class WalletLanding(Screen):
 
         self.datastore = FluxWalletDataStore(
             wallet_names=set(wallets),
-            scan_timer=Timer(self.periodic_scan, 30, run_on_start=True),
+            # scan_timer=Timer(self.periodic_scan, 30, run_on_start=True),
         )
         self.tx_events: asyncio.Queue = asyncio.Queue()
         self.update_dom_on_resume = True
+        self.sio = socketio.AsyncClient()
 
         super().__init__()
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
+        yield NetworkBar(
+            blockheight=self.app.config.network_data.blockheight,
+            hashrate=self.app.config.network_data.hashrate,
+            price=self.app.config.network_data.price,
+            marketcap=self.app.config.network_data.marketcap,
+            delta_24hr=self.app.config.network_data.delta_24hr,
+            show_market_data=self.app.config.show_market_data,
+        )
         # fix this, just pass in defaults and tidy it up after.
         yield TopBar(
             selected_wallet=self.initial_wallet.name,
@@ -184,15 +193,73 @@ class WalletLanding(Screen):
             self.tx_events, force=force, latest_only=latest_only, limit=limit
         )
 
-    async def on_mount(self):
+    async def on_explorer_info(self, data: dict) -> None:
+        print(data)
+        # example = {
+        #     "info": {
+        #         "version": 6020050,
+        #         "protocolversion": 170018,
+        #         "walletversion": 60000,
+        #         "blocks": 1446160,
+        #         "timeoffset": 0,
+        #         "connections": 16,
+        #         "proxy": "",
+        #         "difficulty": 27317.79969724339,
+        #         "testnet": False,
+        #         "relayfee": 1e-06,
+        #         "errors": "",
+        #         "network": "livenet",
+        #         "reward": 3750000000,
+        #     },
+        #     "miningInfo": {"difficulty": 26425.96416617444, "networkhashps": 1817155},
+        #     "supply": "395459750",
+        # }
+        blockheight = data["info"]["blocks"]
+        network_hash = data["miningInfo"]["networkhashps"]
+
+        network_bar = self.query_one("NetworkBar", NetworkBar)
+        network_bar.hashrate = network_hash
+        network_bar.blockheight = blockheight
+
+        self.periodic_scan_worker(blockheight=blockheight)
+
+    async def on_explorer_market_info(self, data: dict) -> None:
+        # example = {
+        #     "price": 0.4115384952910444,
+        #     "price_btc": 1.398345629016484e-05,
+        #     "market_cap_usd": 130147424,
+        #     "total_volume_24h": 1317329.0410391006,
+        #     "delta_24h": 0.8,
+        # }
+        print(data)
+        network_bar = self.query_one("NetworkBar", NetworkBar)
+        network_bar.price = data["price"]
+        network_bar.marketcap = data["market_cap_usd"]
+        network_bar.delta_24hr = data["delta_24h"]
+
+    async def on_unmount(self) -> None:
+        await self.sio.disconnect()
+
+    async def on_mount(self) -> None:
         print("WALLET LANDING ON MOUNT")
         self.monitor_tx_history()
 
         # just pass in wallet name to WalletLanding, don't open wallet
         await self.datastore.set_current_wallet(self.initial_wallet.name)
-        self.datastore.start_scan_timer()
+        # self.datastore.start_scan_timer()
         await self.set_dom_spend_details()
         # self.get_tx_from_db_worker()
+
+        # try/except. If this fails... fallback to polling scantimer
+        # websocket stuff needs to be on wallet, not here
+        self.sio.on("info", self.on_explorer_info)
+        self.sio.on("markets_info", self.on_explorer_market_info)
+        await self.sio.connect(
+            "https://explorer.runonflux.io", transports=["websocket"]
+        )
+        await self.sio.emit("subscribe", "inv")
+
+        self.periodic_scan_worker(self.app.config.network_data.blockheight)
 
         self.initial_wallet = None
         self.initial_wallet_networks = None
@@ -309,35 +376,17 @@ class WalletLanding(Screen):
             else:
                 send.unmount_disabled()
             self.datastore.set_current_network(network)
-        # current_network_scanning = self.datastore.is_current_network_scanning()
-
-        # if self.datastore.tx_history_scanning and not current_network_scanning:
-        #     self.datastore.tx_history_scanning = False
-        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningEnd))
-
-        # if not self.datastore.tx_history_scanning and current_network_scanning:
-        #     self.datastore.tx_history_scanning = True
-        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
 
         await self.update_dom()
-        await self.datastore.reset_timer()
+        # await self.datastore.reset_timer()
 
     @on(TopBar.WalletSelected)
     async def on_topbar_wallet_selected(self, event: TopBar.WalletSelected) -> None:
         if self.datastore.current_wallet == event.wallet:
             return
 
-        # hack
-        # this is before we've set the current_network so bitcoin -> flux
-        # send = self.query_one("Send", Send)
-        # if self.datastore.current_network != "flux":
-        #     send.unmount_disabled()
-
         # this is a worker now - db call.
         self.set_db_last_used_wallet(event.wallet)
-
-        # dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
-        # self.datastore.store_current_network_scroll_height(dt.scroll_y)
 
         self.set_current_and_update_dom(wallet=event.wallet)
 
@@ -346,29 +395,7 @@ class WalletLanding(Screen):
         if self.datastore.current_network == event.network:
             return
 
-        # dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
-        # self.datastore.store_current_network_scroll_height(dt.scroll_y)
-
         self.set_current_and_update_dom(network=event.network)
-
-        # self.datastore.set_current_network(event.network)
-
-        # send = self.query_one("Send", Send)
-        # if event.network != "flux":
-        #     send.mount_disabled()
-        # else:
-        #     send.unmount_disabled()
-
-        # current_network_scanning = self.datastore.is_current_network_scanning()
-
-        # if self.datastore.tx_history_scanning and not current_network_scanning:
-        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningEnd))
-
-        # if not self.datastore.tx_history_scanning and current_network_scanning:
-        #     self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
-
-        # await self.update_dom()
-        # await self.datastore.reset_timer()
 
     @on(Send.AddressBookUpdateRequested)
     def on_address_book_update(self, event: Send.AddressBookUpdateRequested) -> None:
@@ -516,7 +543,7 @@ class WalletLanding(Screen):
             await self.datastore.set_current_wallet(wallet_name)
             self.datastore.set_current_network(network_name)
             await self.update_dom()
-            await self.datastore.reset_timer()
+            # await self.datastore.reset_timer()
 
         wallet = self.datastore.get_current_wallet()
 
@@ -625,12 +652,18 @@ class WalletLanding(Screen):
     #
     # rescan wallet (same as new wallet scan) if new wallet scan running, skip
 
-    async def periodic_scan(self) -> None:
+    @work(group="periodic_scan_worker", exclusive=True)
+    async def periodic_scan_worker(self, blockheight: int | None = None) -> None:
+        # allow a few seconds for the api to update the new block
+        await asyncio.sleep(5)
+        await self.periodic_scan(blockheight=blockheight)
+
+    async def periodic_scan(self, blockheight: int | None = None) -> None:
         print("PERIODIC SCAN")
 
-        if not self.datastore.scan_for_current_network_required(ScanType.PERIODIC):
-            print("Scanned within the last 15 sec... returning")
-            return
+        # if not self.datastore.scan_for_current_network_required(ScanType.PERIODIC):
+        #     print("Scanned within the last 15 sec... returning")
+        #     return
 
         wallet = self.datastore.get_current_wallet()
         network = self.datastore.get_current_network()
@@ -639,7 +672,9 @@ class WalletLanding(Screen):
             print("IN PERIODIC SCAN, OTHER SCANS RUNNING.... RETURNING")
             return
 
-        await self.scan_network(wallet, network, scan_type=ScanType.PERIODIC)
+        await self.scan_network(
+            wallet, network, scan_type=ScanType.PERIODIC, blockheight=blockheight
+        )
 
     @work(group="key_scan")
     async def key_scan(self, key: WalletKey) -> None:
@@ -653,7 +688,7 @@ class WalletLanding(Screen):
 
     @work(group="full_wallet_scan")
     async def full_wallet_scan(self) -> None:
-        await self.datastore.reset_timer(run_on_start=False)
+        # await self.datastore.reset_timer(run_on_start=False)
         self.datastore.reset_current_wallet_datastore()
         # self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
 
@@ -692,6 +727,7 @@ class WalletLanding(Screen):
         scan_type: ScanType,
         *,
         key: WalletKey | None = None,
+        blockheight: int | None = None
         # rescan_used: bool = False,
     ) -> None:
         change = 0
@@ -713,7 +749,10 @@ class WalletLanding(Screen):
             new_txids = await wallet.scan_key(key)
         else:
             new_txids = await wallet.scan(
-                change=change, rescan_used=rescan_used, network=network
+                change=change,
+                rescan_used=rescan_used,
+                network=network,
+                blockcount=blockheight,
             )
 
         await self.update_unconfirmed_txs()

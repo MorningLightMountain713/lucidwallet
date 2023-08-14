@@ -19,82 +19,82 @@ from textual.widgets import Button, Input, Label, Select, Static
 
 class Send(Widget):
     DEFAULT_CSS = """
-    Send {
-        height: 100%;
-        width: 1fr;
-        min-width: 60;
-        # align: center middle;
-        outline: tall $primary;
-        margin-top: 1;
-        margin-bottom: 1;
-        background: $panel;
-        layers: default notification;
-    }
-    Send>Input {
-        margin: 1;
-    }
-    Send>Horizontal {
-        margin-top: 1;
-        margin-left: 1;
-        height: 5;
-    }
-    Send>Horizontal>Select {
-        width: 1fr;
-        max-height: 3;
-        margin-left: 2;
-    }
-    Send>Input {
-        border: tall $primary;
-    }
-    Send>Horizontal>Input {
-        width: 2fr;
-        border: tall $primary;
-        # margin: 1;
-    }
-    Send>Center {
-        margin-left: 1;
-        margin-top: 1;
-    }
-    #save {
-        margin: 0;
-        padding: 0;
-        height: auto;
-        min-width: 0;
-        width: auto;
-    }
-    #save:focus {
-        text-style: none;
-        outline-top: tall black;
-        background: black 80%;
-    }
-    #buttons {
-        margin-left: 1;
-        margin-top: 1;
-        align: center middle;
-    }
-    #all_funds {
-        margin: 0;
-        padding-right: 1;
-        margin-left: 1;
-        outline-right: tall black;
-        min-width: 0;
-    }
-    #all_funds:focus {
-        text-style: none;
-        outline-top: tall black;
-        background: black 80%;
-    }
-    Send>Horizontal>Button {
-        margin: 1;
+    # Send {
+    #     height: 100%;
+    #     width: 1fr;
+    #     min-width: 60;
+    #     # align: center middle;
+    #     outline: tall $primary;
+    #     margin-top: 1;
+    #     margin-bottom: 1;
+    #     background: $panel;
+    #     layers: default notification;
+    # }
+    # Send>Input {
+    #     margin: 1;
+    # }
+    # Send>Horizontal {
+    #     margin-top: 1;
+    #     margin-left: 1;
+    #     height: 5;
+    # }
+    # Send>Horizontal>Select {
+    #     width: 1fr;
+    #     max-height: 3;
+    #     margin-left: 2;
+    # }
+    # Send>Input {
+    #     border: tall $primary;
+    # }
+    # Send>Horizontal>Input {
+    #     width: 2fr;
+    #     border: tall $primary;
+    #     # margin: 1;
+    # }
+    # Send>Center {
+    #     margin-left: 1;
+    #     margin-top: 1;
+    # }
+    # #save {
+    #     margin: 0;
+    #     padding: 0;
+    #     height: auto;
+    #     min-width: 0;
+    #     width: auto;
+    # }
+    # #save:focus {
+    #     text-style: none;
+    #     outline-top: tall black;
+    #     background: black 80%;
+    # }
+    # #buttons {
+    #     margin-left: 1;
+    #     margin-top: 1;
+    #     align: center middle;
+    # }
+    # #all_funds {
+    #     margin: 0;
+    #     padding-right: 1;
+    #     margin-left: 1;
+    #     outline-right: tall black;
+    #     min-width: 0;
+    # }
+    # #all_funds:focus {
+    #     text-style: none;
+    #     outline-top: tall black;
+    #     background: black 80%;
+    # }
+    # Send>Horizontal>Button {
+    #     margin: 1;
 
-    }
-    Send>Horizontal>Select>SelectCurrent {
-        border: tall $primary;
-        max-height: 3;
-    }
-    Send>Horizontal>Select>SelectCurrent Static#label {
-       overflow: hidden;
-    }
+    # }
+    # Send>Horizontal>Select>SelectCurrent {
+    #     border: tall $primary;
+    #     max-height: 3;
+    # }
+    # Send>Horizontal>Select>SelectCurrent Static#label {
+    #    overflow: hidden;
+    # }
     """
 
     sendto_address = reactive("")
@@ -124,7 +124,7 @@ class Send(Widget):
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield Center(Label("Send coins"))
+        yield Label("Send coins", classes="top")
         yield Horizontal(
             Input(
                 placeholder="Address",
@@ -156,6 +156,7 @@ class Send(Widget):
             Button("Send", disabled=True, id="send"),
             id="buttons",
         )
+        yield Center(id="disabled_container")
 
     def validate_address_input(self, address: str) -> bool:
         if address == "":
@@ -190,7 +191,8 @@ class Send(Widget):
         if not self.disabled_mounted:
             self.disabled_mounted = True
             self.disabled = True
-            self.mount(self.disabled_overlay)
+            container = self.query_one("#disabled_container", Center)
+            container.mount(self.disabled_overlay)
 
     def unmount_disabled(self) -> None:
         if self.disabled_mounted:

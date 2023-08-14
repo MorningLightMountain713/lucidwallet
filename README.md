@@ -7,12 +7,14 @@
 ## Features
 
 * Full graphical wallet in your terminal
+* Browser support coming soon
 * Works over ssh with full copy paste (even headless)
 * Flux native wallet (other chains coming soon)
 * Optionally encrypt keys
 * Send / receive transactions
 * Sign messages (login to home.runonflux.io)
 * Create wallet / import from mnemonic
+* Uses Websocket to subscribe for latest blocks
 
 ## Quickstart
 

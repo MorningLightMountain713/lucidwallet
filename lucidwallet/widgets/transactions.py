@@ -15,39 +15,31 @@ from lucidwallet.widgets import TxLoading
 class TransactionHistory(Widget):
     HEADER = ("Out/In", "Date", "Time", "Value", "Units")
     DEFAULT_CSS = """
-    TransactionHistory {
-        width: 1fr;
-        margin-top: 1;
-        margin-bottom: 1;
-        background: $panel;
-        outline-top: tall $primary;
-        outline-left: tall $primary;
-        outline-right: tall $primary;
-        layers: base notifications;
-    }
-    .top {
-        outline-top: tall $primary;
-        width: 100%;
-        height: 3;
-        margin: 0 1 0 1;
-        content-align: center middle;
-        background: $panel;
-    }
-    .bottom {
-        outline-bottom: tall $primary;
-        width: 100%;
-        height: 2;
-        margin: 0 1 0 1;
-        padding-bottom: 1;
-        background: $panel;
-    }
-    # TransactionHistory>Center>ScrollDataTable {
-    #     margin-left: 1;
+    # TransactionHistory {
+    #     width: 1fr;
+    #     margin-top: 1;
+    #     margin-bottom: 1;
     #     background: $panel;
-    #     # height: 1fr;
-    #     # scrollbar-gutter: stable;
-    #     # max-height: 100%;
-    #     width: auto;
+    #     outline-top: tall $primary;
+    #     outline-left: tall $primary;
+    #     outline-right: tall $primary;
+    #     layers: base notifications;
+    # }
+    # .top {
+    #     outline-top: tall $primary;
+    #     width: 100%;
+    #     height: 3;
+    #     margin: 0 1 0 1;
+    #     content-align: center middle;
+    #     background: $panel;
+    # }
+    # .bottom {
+    #     outline-bottom: tall $primary;
+    #     width: 100%;
+    #     height: 2;
+    #     margin: 0 1 0 1;
+    #     padding-bottom: 1;
+    #     background: $panel;
     # }
     """
 
@@ -111,7 +103,8 @@ class TransactionHistory(Widget):
     def compose(self) -> ComposeResult:
         yield Label("Previous Transactions", classes="top")
 
-        yield self.ScrollCenter(self.ScrollDataTable())
+        with self.ScrollCenter():
+            yield self.ScrollDataTable()
 
         yield Label("", classes="bottom")
 
