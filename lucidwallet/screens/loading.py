@@ -182,16 +182,16 @@ class LoadingScreen(Screen):
         return latest_version if latest_version > current_version else None
 
     async def valid_password(self) -> bool:
-        return await self.config.last_used_wallet.db.validate_key()
+        return await self.app.config.last_used_wallet.db.validate_key()
 
     async def encryption_password_callback(self, result: tuple[str, bool]) -> None:
         password, store_in_keychain = result
 
         hashed = hashlib.sha256(bytes(password, "utf8")).hexdigest()
-        self.config.last_used_wallet.db.set_encrypted_key(hashed)
+        self.app.config.last_used_wallet.db.set_encrypted_key(hashed)
 
         if not await self.valid_password():
-            self.app.switch_screen(
+            self.app.push_screen(
                 EncryptionPassword(message="Invalid Password"),
                 self.encryption_password_callback,
             )
@@ -202,7 +202,9 @@ class LoadingScreen(Screen):
 
         self.app.install_screen(
             WalletLanding(
-                self.config.last_used_wallet, self.config.networks, self.config.wallets
+                self.app.config.last_used_wallet,
+                self.app.config.networks,
+                self.app.config.wallets,
             ),
             name="wallet_landing",
         )
@@ -225,6 +227,7 @@ class LoadingScreen(Screen):
             return
 
         if self.app.config.encrypted_db:
+            print("DB ENCRYPTED")
             password_hash = ""
 
             if self.app.config.keyring_available:
@@ -239,6 +242,7 @@ class LoadingScreen(Screen):
                     screen,
                     self.encryption_password_callback,
                 )
+                return
             else:
                 # this only ever needs to get set once
                 self.app.config.last_used_wallet.db.set_encrypted_key(password_hash)
