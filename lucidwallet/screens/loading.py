@@ -208,6 +208,13 @@ class LoadingScreen(Screen):
         )
         self.app.switch_screen("wallet_landing")
 
+    async def wait_loading(self) -> None:
+        # slow loading for minimum 2 seconds
+        elapsed = monotonic() - self.start
+
+        if elapsed < 2:
+            await asyncio.sleep(2 - elapsed)
+
     @work(group="boot")
     async def boot(self) -> None:
         self.app.config = await init_app()
@@ -223,10 +230,14 @@ class LoadingScreen(Screen):
                 password_hash = keyring.get_password("fluxwallet", "fluxwallet_user")
 
             if not password_hash:
-                self.app.switch_screen(
-                    EncryptionPassword(), self.encryption_password_callback
+                screen = EncryptionPassword()
+
+                await self.wait_loading()
+
+                self.app.push_screen(
+                    screen,
+                    self.encryption_password_callback,
                 )
-                return
             else:
                 # this only ever needs to get set once
                 self.app.config.last_used_wallet.db.set_encrypted_key(password_hash)
@@ -235,8 +246,12 @@ class LoadingScreen(Screen):
                     if self.app.config.keyring_available:
                         keyring.delete_password("fluxwallet", "fluxwallet_user")
 
-                    self.app.switch_screen(
-                        EncryptionPassword(message="Invalid Password"),
+                    screen = EncryptionPassword(message="Invalid Password")
+
+                    await self.wait_loading()
+
+                    self.app.push_screen(
+                        screen,
                         self.encryption_password_callback,
                     )
                     return
@@ -250,11 +265,7 @@ class LoadingScreen(Screen):
             name="wallet_landing",
         )
 
-        elapsed = monotonic() - self.start
-
-        # slow loading for minimum 3 seconds
-        if elapsed < 2:
-            await asyncio.sleep(2 - elapsed)
+        await self.wait_loading()
 
         self.app.switch_screen("wallet_landing")
 
