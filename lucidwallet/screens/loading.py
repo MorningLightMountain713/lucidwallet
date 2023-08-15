@@ -220,6 +220,7 @@ class LoadingScreen(Screen):
         self.app.config = await init_app()
 
         if not self.app.config.last_used_wallet:
+            await self.wait_loading()
             self.app.switch_screen("welcome")
             return
 
