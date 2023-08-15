@@ -13,6 +13,14 @@ from rich.color import Color
 import hashlib
 import importlib_metadata
 from packaging import version
+from time import monotonic
+
+import asyncio
+
+from importlib_resources import files
+
+package = "lucidwallet"
+flux_img = files(f"{package}.images").joinpath("flux_200x200.png")
 
 import httpx
 from textual import work
@@ -24,8 +32,6 @@ from numpy.typing import NDArray
 
 from textual.screen import Screen
 
-### OTHER STUFF
-
 import keyring
 
 from lucidwallet.helpers import init_app
@@ -33,9 +39,6 @@ from lucidwallet.screens import (
     EncryptionPassword,
     WalletLanding,
 )
-
-
-package = "lucidwallet"
 
 
 class Renderer:
@@ -58,6 +61,7 @@ class Renderer:
     def get_pixel(col: tuple[float, float, float]) -> Segment:
         color = Color.from_rgb(col[0], col[1], col[2])
         style = Style(bgcolor=color)
+
         return Segment("  ", style)
 
     def render_image(self, scale: tuple[float, float]) -> list[list[Segment]]:
@@ -83,6 +87,7 @@ class Renderer:
             blocks.append(block_col)
             y += block_size[0]
         output = [[self.get_pixel(block) for block in row] for row in blocks]
+
         return output
 
 
@@ -146,12 +151,9 @@ class LoadingScreen(Screen):
     }
     """
 
-    # def on_show(self):
-    #     self.set_timer(3, self.dismiss)
-
     def compose(self):
         yield Static("Lucidwallet")
-        yield TextualImage(Path("static/images/flux_img.png"))
+        yield TextualImage(flux_img)
 
     @work(name="version_check")
     async def version_check(self) -> None:
@@ -247,16 +249,25 @@ class LoadingScreen(Screen):
             ),
             name="wallet_landing",
         )
+
+        elapsed = monotonic() - self.start
+
+        # slow loading for minimum 3 seconds
+        if elapsed < 2:
+            await asyncio.sleep(2 - elapsed)
+
         self.app.switch_screen("wallet_landing")
 
     async def on_show(self) -> None:
+        self.start = monotonic()
         self.call_after_refresh(self.boot)
 
 
-# class BlahApp(App):
-#     def on_mount(self):
-#         self.push_screen(LoadingScreen())
+# if __name__ == "__main__":
 
+#     class BlahApp(App):
+#         def on_mount(self):
+#             self.push_screen(LoadingScreen())
 
-# app = BlahApp()
-# app.run()
+#     app = BlahApp()
+#     app.run()
