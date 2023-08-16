@@ -14,7 +14,6 @@ import httpx
 import importlib_metadata
 
 # fix this, super ugly
-added = None
 if platform.system() == "Windows":
     from importlib.resources import files
 
