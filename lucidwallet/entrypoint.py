@@ -172,10 +172,14 @@ def run():
     if platform.system() == "Windows":
         from importlib_resources import files
 
-        dll_path = files("lucidwallet.ssl_win")
-        with os.add_dll_directory(dll_path):
+        # update this to an extra
+        dll_dir = files("lucidwallet").joinpath("ssl_win")
+        with os.add_dll_directory(str(dll_dir)):
             app = LucidWallet()
             app.run()
+    else:
+        app = LucidWallet()
+        app.run()
 
 
 # for textual console
