@@ -75,7 +75,7 @@ class Navigation(Static):
 
 class Version(Static):
     def render(self) -> RenderableType:
-        return f"[b]v{version('fluxwallet')}"
+        return f"[b]v{version('lucidwallet')}"
 
 
 class Title(Static):
