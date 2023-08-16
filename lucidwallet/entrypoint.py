@@ -20,6 +20,9 @@ from lucidwallet.screens import (
     WalletLanding,
 )
 
+
+import platform
+
 import httpx
 import importlib_metadata
 
@@ -166,8 +169,13 @@ def run():
     # just in case it's been modified
     os.environ["TERM"] = "xterm-256color"
 
-    app = LucidWallet()
-    app.run()
+    if platform.system() == "Windows":
+        from importlib_resources import files
+
+        dll_path = files("lucidwallet.ssl_win")
+        with os.add_dll_directory(dll_path):
+            app = LucidWallet()
+            app.run()
 
 
 # for textual console
