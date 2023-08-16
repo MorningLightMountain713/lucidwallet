@@ -16,16 +16,15 @@ import importlib_metadata
 # fix this, super ugly
 added = None
 if platform.system() == "Windows":
-    from importlib_resources import files
-    import sys
+    from importlib.resources import files
 
     # update this to an extra
     dll_dir = files("lucidwallet").joinpath("ssl_win")
-    # only way I could get this to work was BOTH import
-    # path, then add_dll_dir
-    # ToDo: clean up path?
-    sys.path.insert(0, str(dll_dir))
-    added = os.add_dll_directory(str(dll_dir))
+    # ctypes.util.find_library uses this path...
+    # do we need to clean this up?
+    os.environ["PATH"] += os.pathsep + str(dll_dir)
+    # this just doesn't work...
+    # added = os.add_dll_directory(str(dll_dir))
 
 
 from lucidwallet.helpers import init_app
@@ -183,12 +182,7 @@ def run():
     os.environ["TERM"] = "xterm-256color"
 
     app = LucidWallet()
-
-    try:
-        app.run()
-    finally:
-        if added:
-            added.remove()
+    app.run()
 
 
 # for textual console

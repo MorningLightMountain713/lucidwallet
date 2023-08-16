@@ -17,7 +17,7 @@ from time import monotonic
 
 import asyncio
 
-from importlib_resources import files
+from importlib.resources import files
 
 package = "lucidwallet"
 flux_img = files(f"{package}.images").joinpath("flux_200x200.png")
