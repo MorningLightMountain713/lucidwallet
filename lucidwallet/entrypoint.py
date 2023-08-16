@@ -169,11 +169,16 @@ def run():
     # just in case it's been modified
     os.environ["TERM"] = "xterm-256color"
 
+    # fix this, super ugly
     if platform.system() == "Windows":
         from importlib_resources import files
+        import sys
 
         # update this to an extra
         dll_dir = files("lucidwallet").joinpath("ssl_win")
+        # only way I could get this to work was BOTH import
+        # path, then add_dll_dir
+        sys.path.insert(0, str(dll_dir))
         with os.add_dll_directory(str(dll_dir)):
             app = LucidWallet()
             app.run()
