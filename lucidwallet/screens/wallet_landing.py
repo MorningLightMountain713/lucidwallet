@@ -6,7 +6,10 @@ from functools import partial
 from fluxwallet.db_new import Db, DbAddressBook, DbConfig
 from fluxwallet.keys import HDKey
 from fluxwallet.values import Value
-from fluxwallet.wallet import Wallet, WalletKey, WalletTransaction, WalletError
+
+# KeyType feels wrong
+from fluxwallet.wallet import Wallet, WalletKey, WalletTransaction, WalletError, KeyType
+
 from importlib_metadata import version
 from rich.console import RenderableType
 from sqlalchemy import select
@@ -244,7 +247,6 @@ class WalletLanding(Screen):
         print("WALLET LANDING ON MOUNT")
         self.monitor_tx_history()
 
-        # just pass in wallet name to WalletLanding, don't open wallet
         await self.datastore.set_current_wallet(self.initial_wallet.name)
         # self.datastore.start_scan_timer()
         await self.set_dom_spend_details()
@@ -259,7 +261,7 @@ class WalletLanding(Screen):
         )
         await self.sio.emit("subscribe", "inv")
 
-        self.periodic_scan_worker(self.app.config.network_data.blockheight)
+        # self.periodic_scan_worker(self.app.config.network_data.blockheight)
 
         self.initial_wallet = None
         self.initial_wallet_networks = None
@@ -730,29 +732,31 @@ class WalletLanding(Screen):
         blockheight: int | None = None
         # rescan_used: bool = False,
     ) -> None:
-        change = 0
-        print("SCAN Network", network)
+        # these are the types of keys we scan, payment, change or both
+        key_type = KeyType.PAYMENT
+
+        print("SCAN Network", network, scan_type)
 
         rescan_used = False
 
         if not scan_type == ScanType.PERIODIC:
             self.set_scanning_for_network(wallet.name, network)
+            key_type = KeyType.ANY
 
         if scan_type == ScanType.FULL_WALLET:
             rescan_used = True
 
         if self.datastore.is_network_first_scan(wallet.name, network) or rescan_used:
             self.datastore.set_network_scanned(wallet.name, network)
-            change = None
 
         if key:
             new_txids = await wallet.scan_key(key)
         else:
             new_txids = await wallet.scan(
-                change=change,
                 rescan_used=rescan_used,
                 network=network,
                 blockcount=blockheight,
+                key_type=key_type,
             )
 
         await self.update_unconfirmed_txs()

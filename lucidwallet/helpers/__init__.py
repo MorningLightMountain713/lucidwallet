@@ -145,8 +145,9 @@ async def init_app() -> InitAppResponse:
         keyring_available = False
 
     try:
-        # this will remove any copied stuff though
-        pyperclip.copy("")
+        # hopefully paste buffer isn't huge, can use copy, but
+        # that remove existing buffer - really annoying
+        pyperclip.paste()
     except pyperclip.PyperclipException:
         copy_callback = osc52_copy
     else:
