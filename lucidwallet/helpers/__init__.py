@@ -98,29 +98,58 @@ def osc52_copy(data: str) -> None:
 
 
 async def get_network_data() -> NetworkData:
-    async with httpx.AsyncClient() as client:
+    price = marketcap = delta_24hr = hashrate = blockheight = ""
+
+    transport = httpx.AsyncHTTPTransport(retries=1)
+    timeout = httpx.Timeout(3.0, connect=1.0)
+
+    async with httpx.AsyncClient(transport=transport, timeout=timeout) as client:
         tasks = []
         tasks.append(
-            client.get("https://api.coinpaprika.com/v1/tickers/zel-zelcash?quotes=USD")
+            asyncio.create_task(
+                client.get(
+                    "https://api.coinpaprika.com/v1/tickers/zel-zelcash?quotes=USD"
+                ),
+                name="market_data",
+            )
         )
 
         tasks.append(
-            client.get(
-                "https://explorer.runonflux.io/api/status",
-                params={"q": "getMiningInfo"},
+            asyncio.create_task(
+                client.get(
+                    "https://explorer.runonflux.io/api/status",
+                    params={"q": "getMiningInfo"},
+                ),
+                name="mining_data",
             )
         )
-        tasks.append(client.get("https://explorer.runonflux.io/api/sync"))
-        market_data, mining_data, sync_info = await asyncio.gather(*tasks)
-        market_data = market_data.json()
-        mining_data = mining_data.json()
-        sync_info = sync_info.json()
+        tasks.append(
+            asyncio.create_task(
+                client.get("https://explorer.runonflux.io/api/sync"), name="sync_info"
+            )
+        )
 
-        price = market_data["quotes"]["USD"]["price"]
-        marketcap = market_data["quotes"]["USD"]["market_cap"]
-        delta_24hr = market_data["quotes"]["USD"]["percent_change_24h"]
-        hashrate = mining_data["miningInfo"]["networkhashps"]
-        blockheight = sync_info["height"]
+        results = {}
+        while tasks:
+            done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for t in done:
+                try:
+                    res = await t
+                except (httpx.HTTPError, httpx.ReadError) as e:
+                    pass
+                else:
+                    results[t.get_name()] = res.json()
+
+        if "market_data" in results:
+            price = results["market_data"]["quotes"]["USD"]["price"]
+            marketcap = results["market_data"]["quotes"]["USD"]["market_cap"]
+            delta_24hr = results["market_data"]["quotes"]["USD"]["percent_change_24h"]
+
+        if "mining_data" in results:
+            hashrate = results["mining_data"]["miningInfo"]["networkhashps"]
+
+        if "sync_info" in results:
+            blockheight = results["sync_info"]["height"]
 
         return NetworkData(price, marketcap, delta_24hr, hashrate, blockheight)
 

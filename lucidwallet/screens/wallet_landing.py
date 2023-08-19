@@ -261,6 +261,8 @@ class WalletLanding(Screen):
         )
         await self.sio.emit("subscribe", "inv")
 
+        # removed this, so it will only update when a new block comes in. Not
+        # right, but need to determine when full scan running. Maybe on resume?
         # self.periodic_scan_worker(self.app.config.network_data.blockheight)
 
         self.initial_wallet = None
