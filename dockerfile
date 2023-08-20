@@ -4,10 +4,10 @@ SHELL ["/bin/bash", "-c"]
 
 ENV FW_CONFIG_FILE=/root/config
 
-RUN pip install lucidwallet==0.2.17
+RUN pip install lucidwallet==0.2.18
 
 # hack until cpu fix gets merged
-# COPY core.py /usr/local/lib/python3.11/site-packages/aiosqlite/
+COPY core.py /usr/local/lib/python3.11/site-packages/aiosqlite/
 
 RUN mkdir /database
 
