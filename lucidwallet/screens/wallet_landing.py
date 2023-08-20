@@ -261,9 +261,9 @@ class WalletLanding(Screen):
         )
         await self.sio.emit("subscribe", "inv")
 
-        # removed this, so it will only update when a new block comes in. Not
-        # right, but need to determine when full scan running. Maybe on resume?
-        # self.periodic_scan_worker(self.app.config.network_data.blockheight)
+        # this needs work, might be new blocks in-between initial block fetch
+        if self.initial_wallet.discovered:
+            self.periodic_scan_worker(self.app.config.network_data.blockheight)
 
         self.initial_wallet = None
         self.initial_wallet_networks = None
@@ -509,7 +509,7 @@ class WalletLanding(Screen):
             print("current wallet / network not same as scanned network")
             return
 
-        print("NEW TXS", event.new_transactions)
+        print("ON WALLET SCANNED NEW TXS:", event.new_transactions)
 
         if event.scan_type != ScanType.PERIODIC:
             # maybe this needs a worker... (db call for balance)
