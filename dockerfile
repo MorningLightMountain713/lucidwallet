@@ -7,7 +7,7 @@ RUN apt-get update
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN pip install lucidwallet==0.2.19
+RUN pip install lucidwallet==0.2.20
 
 FROM python:$VERSION-slim-bullseye AS build-image
 
