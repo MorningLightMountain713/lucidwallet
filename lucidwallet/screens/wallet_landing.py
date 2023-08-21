@@ -67,7 +67,7 @@ class Navigation(Static):
             case "import_key":
                 self.post_message(self.NavOpened(nav_item))
             case "encrypt_database":
-                print("WOULD ENCRYPT HERE, NOT BUILT YET")
+                ...
             case "create_wallet":
                 self.app.push_screen("create_wallet")
 
@@ -197,7 +197,6 @@ class WalletLanding(Screen):
         )
 
     async def on_explorer_info(self, data: dict) -> None:
-        print(data)
         # example = {
         #     "info": {
         #         "version": 6020050,
@@ -234,7 +233,6 @@ class WalletLanding(Screen):
         #     "total_volume_24h": 1317329.0410391006,
         #     "delta_24h": 0.8,
         # }
-        print(data)
         network_bar = self.query_one("NetworkBar", NetworkBar)
         network_bar.price = data["price"]
         network_bar.marketcap = data["market_cap_usd"]
@@ -244,7 +242,6 @@ class WalletLanding(Screen):
         await self.sio.disconnect()
 
     async def on_mount(self) -> None:
-        print("WALLET LANDING ON MOUNT")
         self.monitor_tx_history()
 
         await self.datastore.set_current_wallet(self.initial_wallet.name)
@@ -331,11 +328,9 @@ class WalletLanding(Screen):
                     tx_history.unset_loading()
                 case Event.EventType.Scroll:
                     if event.scroll_height:
-                        print("scrolling to", event.scroll_height)
                         tx_history.scroll(y=event.scroll_height)
 
     def tx_history_dom_reload(self) -> None:
-        print("TXHISTORY DOM RELOAD")
         self.tx_events.put_nowait(Event(type=Event.EventType.ClearTable))
 
         self.workers.cancel_group(self, "get_tx_from_db_worker")
@@ -366,7 +361,6 @@ class WalletLanding(Screen):
     ) -> None:
         dt = self.query_one("ScrollCenter", TransactionHistory.ScrollCenter)
         self.datastore.store_current_network_scroll_height(dt.scroll_y)
-        print("SET CURRENT")
         send = self.query_one("Send", Send)
 
         if wallet:
@@ -506,10 +500,7 @@ class WalletLanding(Screen):
             event.wallet_name != self.datastore.current_wallet
             and event.network_name != self.datastore.current_network
         ):
-            print("current wallet / network not same as scanned network")
             return
-
-        print("ON WALLET SCANNED NEW TXS:", event.new_transactions)
 
         if event.scan_type != ScanType.PERIODIC:
             # maybe this needs a worker... (db call for balance)
@@ -530,7 +521,6 @@ class WalletLanding(Screen):
     async def on_screen_resume(self) -> None:
         # hack until I can think of how to do it better
         if self.update_dom_on_resume:
-            print("UPDATING DOM ON RESUME")
             await self.update_dom()
         self.update_dom_on_resume = True
 
@@ -637,7 +627,6 @@ class WalletLanding(Screen):
         ]
 
     def rescan_wallet(self):
-        print("SCAN WALLET WORKER")
         # debounce
         if not self.datastore.scan_for_current_network_required(ScanType.FULL_WALLET):
             self.notify("Scanned already")
@@ -663,8 +652,6 @@ class WalletLanding(Screen):
         await self.periodic_scan(blockheight=blockheight)
 
     async def periodic_scan(self, blockheight: int | None = None) -> None:
-        print("PERIODIC SCAN")
-
         # if not self.datastore.scan_for_current_network_required(ScanType.PERIODIC):
         #     print("Scanned within the last 15 sec... returning")
         #     return
@@ -673,7 +660,6 @@ class WalletLanding(Screen):
         network = self.datastore.get_current_network()
 
         if self.worker_running("key_scan") or self.worker_running("full_wallet_scan"):
-            print("IN PERIODIC SCAN, OTHER SCANS RUNNING.... RETURNING")
             return
 
         await self.scan_network(
@@ -709,7 +695,6 @@ class WalletLanding(Screen):
             and network_name == self.datastore.current_network
             and not self.datastore.tx_history_scanning
         ):
-            print("SETTING TX DOM SCANNING")
             self.datastore.tx_history_scanning = True
             self.tx_events.put_nowait(Event(type=Event.EventType.ScanningStart))
 
@@ -736,8 +721,6 @@ class WalletLanding(Screen):
     ) -> None:
         # these are the types of keys we scan, payment, change or both
         key_type = KeyType.PAYMENT
-
-        print("SCAN Network", network, scan_type)
 
         rescan_used = False
 

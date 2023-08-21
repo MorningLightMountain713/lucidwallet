@@ -211,7 +211,7 @@ class LoadingScreen(Screen):
         self.app.switch_screen("wallet_landing")
 
     async def wait_loading(self) -> None:
-        # slow loading for minimum 2 seconds
+        # show loading for minimum 2 seconds
         elapsed = monotonic() - self.start
 
         if elapsed < 2:
@@ -227,7 +227,6 @@ class LoadingScreen(Screen):
             return
 
         if self.app.config.encrypted_db:
-            print("DB ENCRYPTED")
             password_hash = ""
 
             if self.app.config.keyring_available:
