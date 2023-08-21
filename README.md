@@ -16,7 +16,7 @@
 * Create wallet / import from mnemonic
 * Uses Websocket to subscribe for latest blocks etc
 
-## Quickstart
+## Quickstart (Python 3.10+)
 
 Install:
 
