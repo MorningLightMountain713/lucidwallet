@@ -241,6 +241,15 @@ class WalletLanding(Screen):
     async def on_unmount(self) -> None:
         await self.sio.disconnect()
 
+    async def sio_connected(self) -> None:
+        if self.app.debug:
+            print("SOCKET-IO CONNECTED")
+        await self.sio.emit("subscribe", "inv")
+
+    def sio_disconnected(self) -> None:
+        if self.app.debug:
+            print("SOCKET-IO DISCONNECTED")
+
     async def on_mount(self) -> None:
         self.monitor_tx_history()
 
@@ -251,12 +260,14 @@ class WalletLanding(Screen):
 
         # try/except. If this fails... fallback to polling scantimer
         # websocket stuff needs to be on wallet, not here
+        self.sio.on("connect", self.sio_connected)
+        self.sio.on("disconnect", self.sio_disconnected)
+
         self.sio.on("info", self.on_explorer_info)
         self.sio.on("markets_info", self.on_explorer_market_info)
         await self.sio.connect(
             "https://explorer.runonflux.io", transports=["websocket"]
         )
-        await self.sio.emit("subscribe", "inv")
 
         # this needs work, might be new blocks in-between initial block fetch
         if self.initial_wallet.discovered:
